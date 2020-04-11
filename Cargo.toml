@@ -3,7 +3,14 @@ name = "adaptive-backoff"
 version = "0.1.0"
 authors = ["Billy Rhoades <me@brod.es>"]
 edition = "2018"
+license = "MIT"
+keywords = ["adaptive", "backoff", "rate limit", "throttle"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log = "0.4"
+
+[lib]
+name = "lib"
+path = "src/lib/main.rs"
