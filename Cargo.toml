@@ -12,5 +12,5 @@ keywords = ["adaptive", "backoff", "rate limit", "throttle"]
 log = "0.4"
 
 [lib]
-name = "lib"
+name = "adaptive-backoff"
 path = "src/lib/main.rs"
