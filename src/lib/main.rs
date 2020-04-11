@@ -3,7 +3,7 @@ pub mod backoff;
 pub mod errors;
 
 pub mod prelude {
-    pub use super::adaptive::Adaptive;
-    pub use super::backoff::{Backoff, ExponentialBackoff};
-    pub use super::errors::*;
+    pub use super::adaptive::{Adaptable, Adaptive, AdaptiveBuilder};
+    pub use super::backoff::{Backoff, ExponentialBackoff, ExponentialBackoffBuilder};
+    pub use super::errors::{Error as BackoffError, ErrorKind as BackoffErrorKind};
 }

@@ -14,20 +14,25 @@ pub trait Backoff {
 #[derive(Debug, Default, Builder, Clone)]
 pub struct ExponentialBackoff {
     factor: f64,
-    initial: Duration,
     max: Duration,
+    #[builder(default = "Duration::new(0, 0)")]
     min: Duration,
 
     #[builder(setter(skip))]
-    #[builder(default = "self.initial")]
-    current: Option<Duration>,
+    #[builder(default = "1")]
+    hits: i32,
 }
 
 impl Backoff for ExponentialBackoff {
     fn wait(&mut self) -> Result<Duration> {
-        Ok(self.current.unwrap())
+        let mut secs = self.factor.powi(self.hits);
+        self.hits += 1;
+        secs = secs.min(self.min.as_secs_f64());
+        secs = secs.max(self.max.as_secs_f64());
+
+        Ok(Duration::from_secs_f64(secs))
     }
     fn reset(&mut self) {
-        self.current = Some(self.initial)
+        self.hits = 1;
     }
 }
