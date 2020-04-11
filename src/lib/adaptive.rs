@@ -51,7 +51,7 @@ impl<B: Backoff> Backoff for Adaptive<B> {
 
     fn reset(&mut self) {
         self.backoff.reset();
-        self.delay = Duration::new(0, 0);
+        self.delay = self.base_delay;
         self.successes = 0;
         self.failures = 0;
     }
@@ -59,6 +59,7 @@ impl<B: Backoff> Backoff for Adaptive<B> {
 
 impl<B: Backoff> Adaptable for Adaptive<B> {
     fn success(&mut self) -> Result<()> {
+        self.backoff.reset();
         self.successes += 1;
         match self
             .delay
@@ -72,7 +73,9 @@ impl<B: Backoff> Adaptable for Adaptive<B> {
 
     fn fail(&mut self) -> Result<()> {
         self.failures += 1;
-        self.delay += self.base_delay.div_f64(self.failures as f64);
+        let delta = self.wait()?.div_f64(self.failures as f64);
+        self.delay += delta;
+
         Ok(())
     }
 }
