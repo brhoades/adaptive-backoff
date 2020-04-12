@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use derive_builder::Builder;
+use log::trace;
 
 use super::backoff::*;
 use super::errors::*;
@@ -68,6 +69,12 @@ impl<B: Backoff> Adaptable for Adaptive<B> {
             Some(v) => self.delay = v,
             None => self.delay = Duration::new(0, 0),
         }
+
+        trace!(
+            "success count now {} with delay @ {:?}",
+            self.successes,
+            self.delay
+        );
         Ok(())
     }
 
@@ -76,7 +83,70 @@ impl<B: Backoff> Adaptable for Adaptive<B> {
         let delta = self.wait()?.div_f64(self.failures as f64);
         self.delay += delta;
 
+        trace!(
+            "fail count now {} with delay @ {:?}",
+            self.failures,
+            self.delay
+        );
+
         Ok(())
+    }
+}
+
+#[test]
+fn test_adaptive_exp_backoff() {
+    let factor: f64 = 2.0;
+    let max_exp = 30;
+
+    let mut backoff = ExponentialBackoffBuilder::default();
+    let backoff = backoff
+        .factor(2.0)
+        .max(factor.powi(max_exp))
+        .adaptive()
+        .unwrap()
+        .build();
+
+    assert!(backoff.is_ok(), backoff.err());
+    let mut backoff = backoff.unwrap();
+
+    // all successes, no explicit initial, all zeros
+    for i in 0..max_exp {
+        let exp = Duration::new(0, 0);
+        let res = backoff.success();
+        assert!(res.is_ok(), res.err());
+        let delay = backoff.wait();
+
+        assert!(delay.is_ok(), delay.err());
+        let delay = delay.unwrap();
+
+        assert_eq!(exp, delay, "on iter {}: {:?} != {:?}", i, exp, delay);
+    }
+
+    // one failure, then successes carries the failure delay and scales down.
+    backoff.reset();
+    backoff.fail().unwrap();
+    // assume we backed off
+    for i in 1..max_exp {
+        let res = backoff.success();
+        assert!(res.is_ok(), res.err());
+        let delay = backoff.wait();
+
+        assert!(delay.is_ok(), delay.err());
+        let delay = delay.unwrap();
+
+        // delay is now base + base^1
+        let mut exp = factor * 2.0;
+        for j in 1..=i {
+            exp = (0.0 as f64).max(exp - (factor / j as f64));
+        }
+
+        assert!(
+            (exp - delay.as_secs_f64()).abs() < 0.01,
+            "on iter {}: {:?} != {:?} (within .01)",
+            i,
+            exp,
+            delay
+        );
     }
 }
 

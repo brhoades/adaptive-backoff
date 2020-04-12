@@ -55,4 +55,16 @@ fn test_exp_backoff() {
         let delay = delay.unwrap();
         assert!(ex == delay, "on iter {}: {:?} != {:?}", i, ex, delay);
     }
+
+    backoff.reset();
+
+    let delay = backoff.wait();
+    assert!(delay.is_ok(), delay.err());
+    let delay = delay.unwrap();
+    assert!(
+        delay == Duration::new(2, 0),
+        "after reset: {:?} != {:?}",
+        Duration::new(2, 0),
+        delay
+    );
 }
