@@ -32,15 +32,45 @@ pub struct Adaptive<B: Backoff> {
     backoff: B,
     base_delay: Duration,
 
-    #[builder(default = "0")]
-    failures: u32,
+    /// The factor used to increase backoff over time after failed crawls.
+    /// On failures, a lower factor leads to smaller delay increases and a higher one
+    /// to greater increases.
+    /// Must > 0.
+    #[builder(default = "1.0")]
+    fail_mult: f64,
 
-    #[builder(default = "0")]
-    successes: u32,
+    /// The factor used to decrease backoff over time after successful crawls.
+    /// On success, a lower factor leads to smaller delay decreases and a higher one
+    /// to greater decreases.
+    /// Must > 0.
+    #[builder(default = "1.0")]
+    success_mult: f64,
+
+    /// The running factor for failures, available as an initial value.
+    /// Factor is used as the running cumulative sum of the backoff.wait() / fail_mult.
+    /// It is added to delay on failure().
+    #[builder(default = "0.0")]
+    fail_factor: f64,
+
+    /// The running factor for successes, available as an initial value.
+    /// Factor is used as the running cumulative sum of the base_delay (the first backoff.wait() value)
+    /// over success_mult. It is subtracted from delay on success().
+    #[builder(default = "0.0")]
+    success_factor: f64,
 
     #[builder(setter(skip))]
     #[builder(default = self.base_delay)]
     delay: Duration,
+
+    #[builder(setter(skip))]
+    #[builder(field(private))]
+    #[builder(default = 1.0 / self.success_mult)]
+    success_step: f64,
+
+    #[builder(setter(skip))]
+    #[builder(field(private))]
+    #[builder(default = 1.0 / self.fail_mult)]
+    fail_step: f64,
 }
 
 impl<B: Backoff> Backoff for Adaptive<B> {
@@ -53,18 +83,18 @@ impl<B: Backoff> Backoff for Adaptive<B> {
     fn reset(&mut self) {
         self.backoff.reset();
         self.delay = self.base_delay;
-        self.successes = 0;
-        self.failures = 0;
+        self.success_factor = 0.0;
+        self.fail_factor = 0.0;
     }
 }
 
 impl<B: Backoff> Adaptable for Adaptive<B> {
     fn success(&mut self) -> Result<()> {
         self.backoff.reset();
-        self.successes += 1;
+        self.success_factor += self.success_mult;
         match self
             .delay
-            .checked_sub(self.base_delay.div_f64(self.successes as f64))
+            .checked_sub(self.base_delay.div_f64(self.success_factor))
         {
             Some(v) => self.delay = v,
             None => self.delay = Duration::new(0, 0),
@@ -72,20 +102,20 @@ impl<B: Backoff> Adaptable for Adaptive<B> {
 
         trace!(
             "success count now {} with delay @ {:?}",
-            self.successes,
+            self.success_factor,
             self.delay
         );
         Ok(())
     }
 
     fn fail(&mut self) -> Result<()> {
-        self.failures += 1;
-        let delta = self.backoff.wait()?.div_f64(self.failures as f64);
+        self.fail_factor += self.fail_mult;
+        let delta = self.backoff.wait()?.div_f64(self.fail_factor);
         self.delay += delta;
 
         trace!(
             "fail count now {}, delta {:?} added to delay, now @ {:?}",
-            self.failures,
+            self.fail_factor,
             delta,
             self.delay
         );
@@ -110,7 +140,7 @@ fn test_adaptive_exp_backoff() {
     assert!(backoff.is_ok(), backoff.err());
     let mut backoff = backoff.unwrap();
 
-    // all successes, no explicit initial, all zeros
+    // all success_factor, no explicit initial, all zeros
     for i in 0..max_exp {
         let exp = Duration::new(0, 0);
         let res = backoff.success();
@@ -123,7 +153,7 @@ fn test_adaptive_exp_backoff() {
         assert_eq!(exp, delay, "on iter {}: {:?} != {:?}", i, exp, delay);
     }
 
-    // one failure, then successes carries the failure delay and scales down.
+    // one failure, then success_factor carries the failure delay and scales down.
     backoff.reset();
     backoff.fail().unwrap();
     // assume we backed off
