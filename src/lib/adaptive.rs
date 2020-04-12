@@ -80,12 +80,13 @@ impl<B: Backoff> Adaptable for Adaptive<B> {
 
     fn fail(&mut self) -> Result<()> {
         self.failures += 1;
-        let delta = self.wait()?.div_f64(self.failures as f64);
+        let delta = self.backoff.wait()?.div_f64(self.failures as f64);
         self.delay += delta;
 
         trace!(
-            "fail count now {} with delay @ {:?}",
+            "fail count now {}, delta {:?} added to delay, now @ {:?}",
             self.failures,
+            delta,
             self.delay
         );
 
