@@ -3,8 +3,7 @@ use std::time::Duration;
 use derive_builder::Builder;
 use log::trace;
 
-use super::backoff::*;
-use super::errors::*;
+use crate::{backoff::*, errors::*};
 
 /// The Adaptive trait defines sucess and fail methods
 /// which are used to tune a backoff time.
@@ -17,8 +16,10 @@ impl ExponentialBackoffBuilder {
     /// adaptive finishes the BackoffBuilder and begins an AdaptiveBuilder.
     pub fn adaptive(&mut self) -> Result<AdaptiveBuilder<ExponentialBackoff>> {
         let mut builder = AdaptiveBuilder::default();
-        let mut backoff = self.build()?;
-        let base_delay = backoff.wait().chain_err(|| "failed to prime base delay")?;
+        let mut backoff = self
+            .build()
+            .map_err(|e| format_err!("failed to finish backoff builder: {}", e))?;
+        let base_delay = backoff.wait().context("failed to prime base delay")?;
         backoff.reset();
 
         builder.backoff = Some(backoff);
@@ -180,60 +181,3 @@ fn test_adaptive_exp_backoff() {
         );
     }
 }
-
-/*
-
-/// DelayedAdaptiveBackoff is an AdaptiveBackoff that only begins
-/// scaling the backoff (B) after an initial failure. This prevents overtuning
-/// as part of a circuit break.
-#[derive(Debug, Default)]
-pub struct DelayedAdaptiveBackoff<B: Backoff> {
-    inner: AdaptiveBackoff<B>,
-    triggered: bool,
-}
-
-impl<B: Backoff> DelayedAdaptiveBackoff<B> {
-    pub fn new() -> Self {
-        DelayedAdaptiveBackoff {
-            inner: AdaptiveBackoff::<B>::default(),
-            triggered: false,
-        }
-    }
-
-    pub fn with_backoff(inner: B) -> Self {
-        DelayedAdaptiveBackoff {
-            inner: AdaptiveBackoff::<B>::with_backoff(inner),
-            triggered: false,
-        }
-    }
-}
-
-impl<B: Backoff> Backoff for DelayedAdaptiveBackoff<B> {
-    /// wait returns the current running delay. If success or fail are never called,
-    /// it returns zero.
-    fn wait(&mut self) -> Duration {
-        self.inner.wait()
-    }
-
-    fn reset(&mut self) {
-        self.inner.reset();
-    }
-}
-
-impl<B: Backoff> Adaptive for DelayedAdaptiveBackoff<B> {
-    fn success(&mut self) {
-        if self.triggered {
-            self.inner.success()
-        } else {
-            trace!("adaptive success discarded as not triggered");
-        }
-    }
-
-    fn fail(&mut self) {
-        debug!("adaptive backoff triggered");
-        self.triggered = true;
-        self.inner.fail();
-    }
-}
-
-*/

@@ -1,14 +1,12 @@
-use error_chain::*;
+pub(crate) use anyhow::{Result, Context, format_err};
+pub(crate) use thiserror::Error;
 
-error_chain! {
-    errors {
-        AdaptiveBuilder(t: String) {
-            description("cannot build adaptive backoff")
-            display("unable to build adaptive backoff: {}", t)
-        }
-        AdaptiveBaseDelay {
-            description("missing base delay for adaptive backoff")
-            display("missing base delay for adaptive backoff")
-        }
-    }
+#[derive(Error, Debug)]
+pub enum AdaptiveError {
+    #[error("unable to build adaptive backoff: {msg:?}")]
+    BuilderFailure {
+      msg: String,
+    },
+    #[error("missing base delay for adaptive backoff")]
+    MissingBaseDelay,
 }
