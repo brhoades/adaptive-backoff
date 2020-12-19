@@ -13,11 +13,14 @@ and converges on a minimal delay duration between calls. It grows by a factor of
 a max of `300`.
 
 ```rust
+use adaptive_backoff::prelude::*;
+
 let mut backoff = ExponentialBackoffBuilder::default()
     .factor(2.0)
     .max(300)
     .adaptive()?
-    .build();
+    .build()
+    .unwrap();
 
 loop {
     let item = queue.pop();
