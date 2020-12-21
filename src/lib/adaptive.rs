@@ -149,7 +149,7 @@ impl<'a, B: Backoff, BB: BackoffBuilder<B>> AdaptiveBuilder<'a, B, BB> {
 
 impl ExponentialBackoffBuilder {
     #[allow(dead_code)]
-    fn adaptive<'a>(&'a mut self) -> AdaptiveBuilder<'a, ExponentialBackoff, Self> {
+    pub fn adaptive<'a>(&'a mut self) -> AdaptiveBuilder<'a, ExponentialBackoff, Self> {
         AdaptiveBuilder::<'a, ExponentialBackoff, Self> {
             builder: Some(self),
             ..AdaptiveBuilder::default()
