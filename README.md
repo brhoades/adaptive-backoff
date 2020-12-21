@@ -10,15 +10,16 @@ duration eventually converges on a value to avoid rate limiting of requests.
 ## Example usage
 Below is an example of an adapative `ExponentialBackoff` which works from a queue
 and converges on a minimal delay duration between calls. It grows by a factor of `2.0` to
-a max of `300`.
+a max of 300 seconds.
 
 ```rust
+use std::time::Duration;
 use adaptive_backoff::prelude::*;
 
 let mut backoff = ExponentialBackoffBuilder::default()
     .factor(2.0)
-    .max(300)
-    .adaptive()?
+    .max(Duration::from_secs(300))
+    .adaptive()
     .build()
     .unwrap();
 
