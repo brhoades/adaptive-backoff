@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 pub(crate) use anyhow::{format_err, Context, Result};
 pub(crate) use thiserror::Error;
 
