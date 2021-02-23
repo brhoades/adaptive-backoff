@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+#[cfg(test)]
 use log::trace;
 
 use crate::{backoff::*, errors::*};
@@ -188,6 +189,7 @@ impl<B: Backoff> Adaptable for Adaptive<B> {
             None => self.delay = Duration::new(0, 0),
         }
 
+        #[cfg(test)]
         trace!(
             "success count now {} with delay @ {:?}",
             self.success_factor,
@@ -203,6 +205,7 @@ impl<B: Backoff> Adaptable for Adaptive<B> {
         let delta = self.backoff.wait().div_f64(self.fail_factor);
         self.delay += delta;
 
+        #[cfg(test)]
         trace!(
             "fail count now {}, delta {:?} added to delay, now @ {:?}",
             self.fail_factor,

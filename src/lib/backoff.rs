@@ -92,7 +92,7 @@ fn test_exp_backoff() {
         .factor(2.0)
         .build();
 
-    assert!(backoff.is_ok(), backoff.err());
+    assert!(backoff.is_ok(), "{:?}", backoff.err());
     let mut backoff = backoff.unwrap();
 
     for i in 1..20 {
