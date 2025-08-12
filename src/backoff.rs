@@ -55,7 +55,10 @@ impl BackoffBuilder<ExponentialBackoff> for ExponentialBackoffBuilder {
     /// Build finishes the exponential backoff and returns it or an error.
     fn build(&mut self) -> Result<ExponentialBackoff> {
         Ok(ExponentialBackoff {
-            min: self.min.ok_or_else(|| format_err!("the minimum initial value is required"))?.as_secs_f64(),
+            min: self
+                .min
+                .ok_or_else(|| format_err!("the minimum initial value is required"))?
+                .as_secs_f64(),
             max: self.max.map(|s| s.as_secs_f64()),
             hits: 1,
             factor: self.factor.unwrap_or(2.0),
