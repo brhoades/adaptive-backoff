@@ -44,9 +44,6 @@ pub struct Adaptive<B: Backoff> {
 
     /// Running delay value, for free wait calls.
     delay: Duration,
-
-    success_step: f64,
-    fail_step: f64,
 }
 
 #[derive(Default)]
@@ -142,8 +139,6 @@ impl<'a, B: Backoff, BB: BackoffBuilder<B>> AdaptiveBuilder<'a, B, BB> {
             success_factor: self.success_factor.unwrap_or_default(),
             base_delay,
             delay: Duration::from_secs_f64(0.0),
-            success_step: 1.0 / success_mult,
-            fail_step: 1.0 / fail_mult,
         })
     }
 }
@@ -223,7 +218,7 @@ fn test_adaptive_exp_backoff() {
 
     let mut backoff = ExponentialBackoffBuilder::default()
         .min(Duration::from_secs_f64(0.0))
-        .max(Duration::from_secs_f64((2.0 as f64).powi(20)))
+        .max(Duration::from_secs_f64((2.0_f64).powi(20)))
         .factor(factor)
         .adaptive()
         .build()
@@ -248,7 +243,7 @@ fn test_adaptive_exp_backoff() {
         // delay is now base + base^1
         let mut exp = factor * 2.0;
         for j in 1..=i {
-            exp = (0.0 as f64).max(exp - (factor / j as f64));
+            exp = (0.0_f64).max(exp - (factor / j as f64));
         }
 
         assert!(

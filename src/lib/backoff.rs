@@ -59,7 +59,6 @@ impl BackoffBuilder<ExponentialBackoff> for ExponentialBackoffBuilder {
             max: self.max.map(|s| s.as_secs_f64()),
             hits: 1,
             factor: self.factor.unwrap_or(2.0),
-            ..ExponentialBackoff::default()
         })
     }
 }
@@ -88,7 +87,7 @@ impl ExponentialBackoffBuilder {
 fn test_exp_backoff() {
     let backoff = ExponentialBackoffBuilder::default()
         .min(Duration::from_secs_f64(0.0))
-        .max(Duration::from_secs_f64((2.0 as f64).powi(20)))
+        .max(Duration::from_secs_f64((2.0_f64).powi(20)))
         .factor(2.0)
         .build();
 
@@ -97,7 +96,7 @@ fn test_exp_backoff() {
 
     for i in 1..20 {
         let delay = backoff.wait();
-        let ex = Duration::from_secs_f64((2.0 as f64).powi(i));
+        let ex = Duration::from_secs_f64((2.0_f64).powi(i));
 
         assert!(ex == delay, "on iter {}: {:?} != {:?}", i, ex, delay);
     }
